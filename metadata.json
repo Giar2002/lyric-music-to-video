@@ -1,0 +1,6 @@
+{
+  "name": "Lyrical - Music to Video",
+  "description": "Convert your music into stunning Spotify-style lyrics videos directly in your browser. Features manual lyric syncing and AI assistance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Music to Video", "Lyrics Syncing", "AI Transcription"]
+}
