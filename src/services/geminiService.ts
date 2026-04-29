@@ -1,9 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: GoogleGenAI | null = null;
 
 export async function transcribeLyrics(audioBase64: string, mimeType: string): Promise<string> {
   try {
+    if (!ai) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("Gemini API Key tidak terkonfigurasi. Silakan tambahkan di .env.");
+      }
+      ai = new GoogleGenAI({ apiKey });
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
