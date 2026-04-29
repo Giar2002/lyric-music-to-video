@@ -47,9 +47,20 @@ export default function App() {
 
   useEffect(() => {
     if (syncListRef.current && state.step === 'sync') {
-      const activeItem = syncListRef.current.children[syncIndex] as HTMLElement;
-      if (activeItem) {
-        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const container = syncListRef.current;
+      const listContent = container.querySelector('.space-y-4');
+      if (listContent) {
+        const activeItem = listContent.children[syncIndex] as HTMLElement;
+        if (activeItem) {
+          const containerHeight = container.offsetHeight;
+          const itemOffsetTop = activeItem.offsetTop;
+          const itemHeight = activeItem.offsetHeight;
+          // Calculate scroll position to center the item
+          container.scrollTo({
+            top: itemOffsetTop - (containerHeight / 2) + (itemHeight / 2),
+            behavior: 'smooth'
+          });
+        }
       }
     }
   }, [syncIndex, state.step]);
@@ -165,16 +176,28 @@ export default function App() {
     setIsPlaying(!isPlaying);
   };
 
-  const handleReplay = () => {
+  // Cleanup audio when switching steps
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      // Reset time when going to preview for a fresh start
+      if (state.step === 'preview') {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+      }
+    }
+  }, [state.step]);
+
+  const handlePreviewToggle = () => {
     if (!audioRef.current) return;
     
     if (isPlaying) {
-      // If playing, then pause it
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      // If at the end, restart
-      if (audioRef.current.ended || audioRef.current.currentTime >= audioRef.current.duration - 0.1) {
+      // If at end or very close to it, restart
+      if (audioRef.current.ended || audioRef.current.currentTime >= audioRef.current.duration - 0.2) {
         audioRef.current.currentTime = 0;
         setCurrentTime(0);
       }
@@ -449,9 +472,11 @@ export default function App() {
                     <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#121212] to-transparent z-10" />
                     
                     <div 
-                      className="transition-transform duration-700 ease-out space-y-6"
+                      className="transition-transform duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] space-y-8"
                       style={{ 
-                        transform: `translateY(${-((state.lyrics.findLastIndex(l => currentTime >= l.startTime) || 0) * 80) + 120}px)` 
+                        // Each item is 100px height + 32px (space-y-8) = 132px
+                        // Offset of 220px to center on active (assuming ~500px container height)
+                        transform: `translateY(${-((Math.max(0, state.lyrics.findLastIndex(l => currentTime >= l.startTime))) * 132) + 200}px)` 
                       }}
                     >
                       {state.lyrics.map((l, i) => {
@@ -460,8 +485,10 @@ export default function App() {
                           <motion.p 
                             key={l.id}
                             className={cn(
-                              "text-4xl md:text-5xl font-black tracking-tight transition-all duration-500 min-h-[80px] flex items-center",
-                              active ? "text-white scale-100 opacity-100" : "text-white/20 scale-90 blur-[1px]"
+                              "text-4xl md:text-6xl font-black tracking-tight transition-all duration-700 min-h-[100px] flex items-center px-8",
+                              active 
+                                ? "text-white scale-100 opacity-100 drop-shadow-[0_0_35px_rgba(255,255,255,0.6)]" 
+                                : "text-white/20 scale-90 blur-[0.5px]"
                             )}
                           >
                             {l.text}
@@ -483,7 +510,7 @@ export default function App() {
 
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
                 <button 
-                  onClick={handleReplay}
+                  onClick={handlePreviewToggle}
                   className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform active:scale-95 shadow-xl shadow-white/10"
                 >
                   {isPlaying ? <Pause size={28} /> : <Play size={28} fill="currentColor" />}
@@ -524,7 +551,7 @@ export default function App() {
            </div>
 
            <div className="pointer-events-auto opacity-50 hover:opacity-100 transition-opacity">
-              <a href="#" className="text-[10px] font-medium tracking-[0.3em] uppercase">Powered by Gemini AI</a>
+              <a href="#" className="text-[10px] font-medium tracking-[0.3em] uppercase">powered by Glabs Studio</a>
            </div>
         </div>
       </footer>
